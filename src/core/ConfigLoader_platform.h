@@ -146,6 +146,7 @@ static struct option const config_options[] = {
     { "workers",          0, nullptr, xmrig::IConfig::WorkersKey        },
     { "reuse-timeout",    1, nullptr, xmrig::IConfig::ReuseTimeoutKey   },
     { "mode",             1, nullptr, xmrig::IConfig::ModeKey           },
+    { "queue-connection-string", 1, nullptr, xmrig::IConfig::QueueConnectionStringKey },
     { nullptr,            0, nullptr, 0 }
 };
 

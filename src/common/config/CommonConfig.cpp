@@ -198,6 +198,10 @@ bool xmrig::CommonConfig::parseString(int key, const char *arg)
         m_algorithm.parseAlgorithm(arg);
         break;
 
+    case QueueConnectionStringKey:
+        m_queueConnectionString = arg;
+        break;
+        
     case UserpassKey: /* --userpass */
         if (!m_pools.back().setUserpass(arg)) {
             return false;

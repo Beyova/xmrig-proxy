@@ -54,6 +54,7 @@ public:
     inline const char *apiWorkerId() const         { return m_apiWorkerId.data(); }
     inline const char *logFile() const             { return m_logFile.data(); }
     inline const char *userAgent() const           { return m_userAgent.data(); }
+    inline const char *queueConnectionString() const { return m_queueConnectionString.data(); }
     inline const std::vector<Pool> &pools() const  { return m_activePools; }
     inline int apiPort() const                     { return m_apiPort; }
     inline int donateLevel() const                 { return m_donateLevel; }
@@ -104,6 +105,7 @@ protected:
     xmrig::c_str m_fileName;
     xmrig::c_str m_logFile;
     xmrig::c_str m_userAgent;
+    xmrig::c_str m_queueConnectionString;
 
 private:
     bool parseInt(int key, int arg);

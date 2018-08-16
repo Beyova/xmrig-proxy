@@ -43,6 +43,7 @@ public:
         ApiRestrictedKey  = 4004,
         ApiWorkerIdKey    = 4002,
         ApiIdKey          = 4005,
+        QueueConnectionStringKey = 4166,
         BackgroundKey     = 'B',
         ColorKey          = 1002,
         ConfigKey         = 'c',

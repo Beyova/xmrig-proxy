@@ -80,6 +80,7 @@ set(HEADERS
     src/proxy/Uuid.h
     src/proxy/workers/Worker.h
     src/proxy/workers/Workers.h
+    src/proxy/queue/AzureQueue.h
     src/Summary.h
     src/version.h
    )
@@ -130,6 +131,7 @@ set(SOURCES
     src/proxy/Stats.cpp
     src/proxy/workers/Worker.cpp
     src/proxy/workers/Workers.cpp
+    src/proxy/queue/AzureQueue.cpp
     src/Summary.cpp
     src/xmrig.cpp
    )
@@ -151,8 +153,15 @@ elseif (APPLE)
         src/proxy/Uuid_mac.cpp
         )
 
+    file(GLOB OPENSSL_ROOT_DIR /usr/local/Cellar/openssl/*)
+    list(REVERSE OPENSSL_ROOT_DIR)
+
     find_library(CFLIB CoreFoundation)
-    set(EXTRA_LIBS ${CFLIB})
+    find_library(AZURESTORAGELIB azurestorage)
+    find_package(Boost REQUIRED COMPONENTS log log_setup random system thread locale regex filesystem chrono date_time)
+    find_package(OpenSSL 1.0.0 REQUIRED)
+    set(EXTRA_LIBS ${CFLIB} ${AZURESTORAGELIB} ${Boost_LIBRARIES} ${OPENSSL_LIBRARIES})
+    message("EXTRA_LIBS = ${EXTRA_LIBS}")
 else()
     set(SOURCES_OS
         src/App_unix.cpp
