@@ -80,7 +80,6 @@ set(HEADERS
     src/proxy/Uuid.h
     src/proxy/workers/Worker.h
     src/proxy/workers/Workers.h
-    src/proxy/queue/AzureQueue.h
     src/Summary.h
     src/version.h
    )
@@ -131,7 +130,6 @@ set(SOURCES
     src/proxy/Stats.cpp
     src/proxy/workers/Worker.cpp
     src/proxy/workers/Workers.cpp
-    src/proxy/queue/AzureQueue.cpp
     src/Summary.cpp
     src/xmrig.cpp
    )

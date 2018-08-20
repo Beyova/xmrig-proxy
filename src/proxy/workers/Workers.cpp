@@ -26,6 +26,7 @@
 
 
 #include "common/log/Log.h"
+#include "common/net/SubmitResult.h"
 #include "core/Config.h"
 #include "core/Controller.h"
 #include "proxy/events/AcceptEvent.h"
@@ -35,12 +36,38 @@
 #include "proxy/LoginRequest.h"
 #include "proxy/Miner.h"
 #include "proxy/workers/Workers.h"
-
+#include "rapidjson/document.h"
+#include "rapidjson/stringbuffer.h"
+#include "rapidjson/writer.h"
+#include <was/storage_account.h>
 
 Workers::Workers(xmrig::Controller *controller) :
     m_enabled(controller->config()->isWorkers()),
     m_controller(controller)
 {
+    m_algo_short_name = controller->config()->pools().front().algorithm().shortName();
+    try
+    {
+        std::string connectionString(controller->config()->queueConnectionString());
+        azure::storage::cloud_storage_account storage_account = azure::storage::cloud_storage_account::parse(connectionString);
+        m_queue_client = storage_account.create_cloud_queue_client();
+        m_queue = m_queue_client.get_queue_reference(_XPLATSTR("submitaudit"));
+    }
+    catch (const azure::storage::storage_exception& e)
+    {
+        ucout << _XPLATSTR("Error: ") << e.what() << std::endl;
+
+        azure::storage::request_result result = e.result();
+        azure::storage::storage_extended_error extended_error = result.extended_error();
+        if (!extended_error.message().empty())
+        {
+            ucout << extended_error.message() << std::endl;
+        }
+    }
+    catch (const std::exception& e)
+    {
+        ucout << _XPLATSTR("Error: ") << e.what() << std::endl;
+    }
 }
 
 
@@ -169,9 +196,11 @@ void Workers::accept(const AcceptEvent *event)
     Worker &worker = m_workers[index];
     if (!event->isRejected()) {
         worker.add(event->result);
+        submitQueue(&worker, event->miner(), &event->result, "accpet");
     }
     else {
         worker.reject(false);
+        submitQueue(&worker, event->miner(), nullptr, "reject");
     }
 }
 
@@ -187,13 +216,16 @@ void Workers::login(const LoginEvent *event)
         m_map[name] = id;
         m_miners[event->miner()->id()] = id;
 
-        return;
+        submitQueue(nullptr, event->miner(), nullptr, "login");
     }
+    else {
+        Worker &worker = m_workers[m_map.at(name)];
 
-    Worker &worker = m_workers[m_map.at(name)];
+        worker.add(event->miner()->ip());
+        m_miners[event->miner()->id()] = worker.id();
 
-    worker.add(event->miner()->ip());
-    m_miners[event->miner()->id()] = worker.id();
+        submitQueue(&worker, event->miner(), nullptr, "login");
+    }
 }
 
 
@@ -204,7 +236,10 @@ void Workers::reject(const SubmitEvent *event)
         return;
     }
 
-    m_workers[index].reject(true);
+    Worker &worker = m_workers[index];
+    worker.reject(true);
+
+    submitQueue(&worker, event->miner(), nullptr, "invalid");
 }
 
 
@@ -214,6 +249,62 @@ void Workers::remove(const CloseEvent *event)
     if (!indexByMiner(event->miner(), &index)) {
         return;
     }
+    Worker &worker = m_workers[index];
+    worker.remove();
 
-    m_workers[index].remove();
+    submitQueue(&worker, event->miner(), nullptr, "logout");
+}
+
+void Workers::submitQueue(const Worker *worker, const Miner *miner, const SubmitResult *result, const char *eventName)
+{
+    rapidjson::Document doc;
+    doc.SetObject();
+
+    auto &allocator = doc.GetAllocator();
+
+    const char *uid = "";
+    const char *ip = "";
+    uint32_t diff = 0;
+
+    if (worker != nullptr) {
+        uid = worker->name();
+    }
+    if (miner != nullptr) {
+        ip = miner->ip();
+    }
+    if (result != nullptr) {
+        diff = result->diff;
+    }
+
+    doc.AddMember("uid", rapidjson::StringRef(uid), allocator);
+    doc.AddMember("ip", rapidjson::StringRef(ip), allocator);
+    doc.AddMember("event", rapidjson::StringRef(eventName), allocator);
+    doc.AddMember("algo", rapidjson::StringRef(m_algo_short_name), allocator);
+    doc.AddMember("diff", diff, allocator);
+
+    rapidjson::StringBuffer buffer;
+    buffer.Clear();
+    rapidjson::Writer<rapidjson::StringBuffer> writer(buffer);
+    doc.Accept(writer);
+    std::string s(buffer.GetString());
+    try
+    {
+        azure::storage::cloud_queue_message message(_XPLATSTR(s));
+        m_queue.add_message_async(message);
+    }
+    catch (const azure::storage::storage_exception& e)
+    {
+        ucout << _XPLATSTR("Error: ") << e.what() << std::endl;
+
+        azure::storage::request_result result = e.result();
+        azure::storage::storage_extended_error extended_error = result.extended_error();
+        if (!extended_error.message().empty())
+        {
+            ucout << extended_error.message() << std::endl;
+        }
+    }
+    catch (const std::exception& e)
+    {
+        ucout << _XPLATSTR("Error: ") << e.what() << std::endl;
+    }
 }

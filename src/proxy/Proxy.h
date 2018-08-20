@@ -33,7 +33,6 @@
 #include "proxy/CustomDiff.h"
 #include "proxy/Stats.h"
 #include "proxy/workers/Worker.h"
-#include "proxy/queue/AzureQueue.h"
 
 
 class AccessLog;
@@ -102,7 +101,6 @@ private:
     uv_timer_t m_timer;
     Workers *m_workers;
     xmrig::Controller *m_controller;
-    AzureQueue *m_queue;
 };
 
 

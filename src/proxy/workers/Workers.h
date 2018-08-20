@@ -33,6 +33,7 @@
 #include "interfaces/IEventListener.h"
 #include "proxy/workers/Worker.h"
 
+#include <was/queue.h>
 
 class AcceptEvent;
 class CloseEvent;
@@ -73,6 +74,11 @@ private:
     std::map<std::string, size_t> m_map;
     std::vector<Worker> m_workers;
     xmrig::Controller *m_controller;
+
+    void submitQueue(const Worker *worker, const Miner *miner, const SubmitResult *result, const char *eventName);
+    azure::storage::cloud_queue_client m_queue_client;
+    azure::storage::cloud_queue m_queue;
+    const char *m_algo_short_name;
 };
 
 

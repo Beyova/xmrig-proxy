@@ -75,7 +75,6 @@ Proxy::Proxy(xmrig::Controller *controller) :
     m_shareLog  = new ShareLog(controller, m_stats);
     m_accessLog = new AccessLog(controller);
     m_workers   = new Workers(controller);
-    m_queue     = new AzureQueue(controller);
 
     m_timer.data = this;
     uv_timer_init(uv_default_loop(), &m_timer);
@@ -99,12 +98,10 @@ Proxy::Proxy(xmrig::Controller *controller) :
     Events::subscribe(IEvent::SubmitType, splitter);
     Events::subscribe(IEvent::SubmitType, &m_stats);
     Events::subscribe(IEvent::SubmitType, m_workers);
-    Events::subscribe(IEvent::SubmitType, m_queue);
 
     Events::subscribe(IEvent::AcceptType, &m_stats);
     Events::subscribe(IEvent::AcceptType, m_shareLog);
     Events::subscribe(IEvent::AcceptType, m_workers);
-    Events::subscribe(IEvent::AcceptType, m_queue);
 
     m_debug = new ProxyDebug(controller->config()->isDebug());
 
