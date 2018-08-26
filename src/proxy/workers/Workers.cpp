@@ -196,7 +196,7 @@ void Workers::accept(const AcceptEvent *event)
     Worker &worker = m_workers[index];
     if (!event->isRejected()) {
         worker.add(event->result);
-        submitQueue(&worker, event->miner(), &event->result, "accpet");
+        submitQueue(&worker, event->miner(), &event->result, "accept");
     }
     else {
         worker.reject(false);
